@@ -1,5 +1,10 @@
 # Requirements
 
+## Implementation status (repo tracking)
+- ✅ Implemented
+- 🚧 Partially implemented / scaffolded
+- ❌ Not implemented
+
 ## Goals
 - Help users quickly create a role-tailored resume using a job description + requirements.
 - Let users paste or upload an existing resume, then polish/rewrite it to better match the target role.
@@ -64,75 +69,75 @@ Example mapping:
 
 ## Functional Requirements
 ### 1) Core flows
-- Create/manage "Applications" (one per target role/company).
-- Input job posting:
-  - Paste freeform text.
-  - Optional fields: company, role title, location, seniority.
-  - Optional structured requirements: must-have / nice-to-have / keywords.
-- Input user background:
-  - Paste resume text.
-  - Upload resume file: PDF and DOCX (MVP); validate size limits.
-  - Parse into structured sections when possible; fall back to plain text if parsing fails.
+- ✅ Create/manage "Applications" (one per target role/company).
+- ✅ Input job posting:
+  - ✅ Paste freeform text.
+  - ✅ Optional fields: company, role title, location, seniority.
+  - ✅ Optional structured requirements: must-have / nice-to-have / keywords.
+- 🚧 Input user background:
+  - ✅ Paste resume text.
+  - ✅ Upload resume file: PDF and DOCX (MVP); validate size limits.
+  - ❌ Parse into structured sections when possible; fall back to plain text if parsing fails.
 
 ### 2) AI processing
-- Job analysis:
-  - Extract responsibilities, must-have skills, nice-to-have skills, and domain keywords.
-  - Identify seniority signals (IC vs manager, years, leadership expectations).
-- Resume analysis:
-  - Detect gaps vs job requirements.
-  - Flag unclear bullets, missing metrics, repetition, and weak verbs.
-  - Detect potential red flags (inconsistencies, overly long bullets, missing context).
-- Tailoring/generation:
-  - Generate a tailored professional summary.
-  - Rewrite experience bullets to emphasize relevant impact while preserving factual claims.
-  - Suggest skills list alignment and keyword coverage.
-  - Ask clarifying questions when needed (e.g., missing metrics, tools used, scope).
+- ❌ Job analysis:
+  - ❌ Extract responsibilities, must-have skills, nice-to-have skills, and domain keywords.
+  - ❌ Identify seniority signals (IC vs manager, years, leadership expectations).
+- ❌ Resume analysis:
+  - ❌ Detect gaps vs job requirements.
+  - ❌ Flag unclear bullets, missing metrics, repetition, and weak verbs.
+  - ❌ Detect potential red flags (inconsistencies, overly long bullets, missing context).
+- ❌ Tailoring/generation:
+  - ❌ Generate a tailored professional summary.
+  - ❌ Rewrite experience bullets to emphasize relevant impact while preserving factual claims.
+  - ❌ Suggest skills list alignment and keyword coverage.
+  - ❌ Ask clarifying questions when needed (e.g., missing metrics, tools used, scope).
 
 ### 3) Chat experience
-- Chat UI tied to the current Application.
-- Messages can reference:
-  - The job description/requirements.
-  - The user's resume content.
-  - The current edited resume draft.
-- Provide quick actions (buttons) in chat:
-  - "Generate tailored resume"
-  - "Improve bullet" (selection-based)
-  - "Add metrics"
-  - "Shorten"
-  - "Make more ATS-friendly"
-- Streaming responses (token-by-token) if supported by the LLM provider.
+- ❌ Chat UI tied to the current Application.
+- 🚧 Messages can reference:
+  - ✅ The job description/requirements.
+  - ✅ The user's resume content.
+  - 🚧 The current edited resume draft.
+- ❌ Provide quick actions (buttons) in chat:
+  - ❌ "Generate tailored resume"
+  - ❌ "Improve bullet" (selection-based)
+  - ❌ "Add metrics"
+  - ❌ "Shorten"
+  - ❌ "Make more ATS-friendly"
+- ❌ Streaming responses (token-by-token) if supported by the LLM provider.
 
 ### 4) Resume editor + versions
-- Editor supports structured sections:
-  - Header (name/contact), Summary, Experience, Projects, Skills, Education, Certifications (optional).
-- Maintain versions:
-  - Save snapshots (manual save and/or auto-save).
-  - Compare versions (diff view is a stretch goal; at minimum, labeled versions).
-- Provide "truth guardrails":
-  - The system should not invent employers, dates, degrees, titles, or certifications.
-  - If info is missing, ask the user or mark as TODO.
+- ❌ Editor supports structured sections:
+  - ❌ Header (name/contact), Summary, Experience, Projects, Skills, Education, Certifications (optional).
+- 🚧 Maintain versions:
+  - ❌ Save snapshots (manual save and/or auto-save).
+  - ❌ Compare versions (diff view is a stretch goal; at minimum, labeled versions).
+- ❌ Provide "truth guardrails":
+  - ❌ The system should not invent employers, dates, degrees, titles, or certifications.
+  - ❌ If info is missing, ask the user or mark as TODO.
 
 ### 5) Export
-- Copy to clipboard (plain text / markdown-like formatting).
-- Download:
-  - PDF (from a consistent template), and/or
-  - DOCX (optional for MVP if PDF is hard).
-- Output should be ATS-friendly: consistent headings, simple layout, no tables for MVP.
+- ❌ Copy to clipboard (plain text / markdown-like formatting).
+- ❌ Download:
+  - ❌ PDF (from a consistent template), and/or
+  - ❌ DOCX (optional for MVP if PDF is hard).
+- ❌ Output should be ATS-friendly: consistent headings, simple layout, no tables for MVP.
 
 ### 6) Accounts and data (MVP defaults)
-- MVP can be "no login" (local-only) or "email login"; see Open Questions.
-- Users can delete their data.
-- If storing on server: encrypt at rest and restrict access.
+- ✅ MVP can be "no login" (local-only) or "email login"; see Open Questions. (Currently: local-only)
+- ✅ Users can delete their data.
+- ❌ If storing on server: encrypt at rest and restrict access.
 
 ### 7) Safety, policy, and transparency
-- Disclose that AI may be inaccurate and user must verify content.
-- Provide an explicit "Do not fabricate" constraint in the system behavior.
-- Basic prompt-injection defenses:
-  - Treat uploaded/pasted content as untrusted input.
-  - Do not reveal system prompts or secrets.
+- ❌ Disclose that AI may be inaccurate and user must verify content.
+- ❌ Provide an explicit "Do not fabricate" constraint in the system behavior.
+- ❌ Basic prompt-injection defenses:
+  - ❌ Treat uploaded/pasted content as untrusted input.
+  - ❌ Do not reveal system prompts or secrets.
 
 ### 8) Observability (minimum)
-- Capture non-sensitive telemetry (errors, latency, token usage) without storing raw resume/job text by default.
+- ❌ Capture non-sensitive telemetry (errors, latency, token usage) without storing raw resume/job text by default.
 
 ## Non-Functional Requirements
 - Usability:
