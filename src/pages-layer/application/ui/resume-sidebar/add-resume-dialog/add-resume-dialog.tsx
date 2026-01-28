@@ -1,3 +1,5 @@
+import { useState } from 'react';
+
 import { Button } from '@/shared/ui/button';
 import {
   Dialog,
@@ -6,27 +8,28 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from '@/shared/ui/dialog';
 import { Input } from '@/shared/ui/input';
 import { Label } from '@/shared/ui/label';
 
-type ResumeDialogProps = {
-  isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
+type AddResumeDialogProps = {
   onCreateJob: () => void;
   jobName: string;
   setJobName: (name: string) => void;
+  trigger: React.ReactNode;
 };
 
-export function ResumeDialog({
-  isOpen,
-  onOpenChange,
+export function AddResumeDialog({
   onCreateJob,
   jobName,
   setJobName,
-}: ResumeDialogProps) {
+  trigger,
+}: AddResumeDialogProps) {
+  const [open, setOpen] = useState(false);
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Create New Job Analysis</DialogTitle>
@@ -54,13 +57,18 @@ export function ResumeDialog({
           <Button
             variant="outline"
             onClick={() => {
-              // setOpen(false);
+              setOpen(false);
               // setJobName("");
             }}
           >
             Cancel
           </Button>
-          <Button onClick={onCreateJob} disabled={!jobName.trim()}>
+          <Button
+            onClick={() => {
+              onCreateJob();
+              setOpen(false);
+            }}
+          >
             Create
           </Button>
         </DialogFooter>
