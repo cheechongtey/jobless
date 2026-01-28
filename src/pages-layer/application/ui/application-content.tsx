@@ -8,25 +8,16 @@ import { toast } from 'sonner';
 import {
   deleteApplication,
   getApplication,
-  updateApplicationTitle,
   updateJobAnalysis,
-  updateJobFields,
-  updateRequirements,
   updateResumeAnalysis,
   updateResumeDraft,
   updateResumeSourceText,
 } from '@/entities/application/model/repo';
-import type {
-  Application,
-  JobAnalysis,
-  Requirements,
-  ResumeAnalysis,
-} from '@/entities/application/model/types';
-import { RequirementChips } from '@/features/requirements-chips';
+import type { Application, JobAnalysis, ResumeAnalysis } from '@/entities/application/model/types';
+import { JobForm } from '@/features/job-form/ui/job-form';
 import { ResumeUpload } from '@/features/resume-upload';
 import { ResumeAnalysisPanel } from '@/pages-layer/application/ui/ResumeAnalysisPanel';
 import { Button } from '@/shared/ui/button';
-import { Input } from '@/shared/ui/input';
 import { SidebarTrigger } from '@/shared/ui/sidebar';
 import { Textarea } from '@/shared/ui/textarea';
 
@@ -80,8 +71,6 @@ export function ApplicationContent(props: { id: string }) {
       </div>
     );
   }
-
-  const requirements: Requirements = app.job.requirements;
 
   return (
     // <SidebarProvider className="bg-zinc-50 text-zinc-900 dark:bg-black dark:text-zinc-50">
@@ -186,114 +175,7 @@ export function ApplicationContent(props: { id: string }) {
         </div>
 
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <section className="rounded-xl border bg-card text-card-foreground shadow">
-            <div className="flex items-center justify-between gap-3 border-b px-4 py-3">
-              <div className="text-sm font-semibold">Basics</div>
-              <div className="text-xs text-muted-foreground">Auto-saved</div>
-            </div>
-            <div className="p-4">
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                <div className="space-y-1">
-                  <div className="text-sm font-medium">Title</div>
-                  <Input
-                    value={app.title}
-                    onChange={(e) => updateApplicationTitle(app.id, e.target.value)}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <div className="text-sm font-medium">Company</div>
-                  <Input
-                    value={app.job.company || ''}
-                    onChange={(e) => updateJobFields(app.id, { company: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <div className="text-sm font-medium">Role title</div>
-                  <Input
-                    value={app.job.roleTitle || ''}
-                    onChange={(e) => updateJobFields(app.id, { roleTitle: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <div className="text-sm font-medium">Location</div>
-                  <Input
-                    value={app.job.location || ''}
-                    onChange={(e) => updateJobFields(app.id, { location: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <div className="text-sm font-medium">Seniority</div>
-                  <Input
-                    value={app.job.seniority || ''}
-                    onChange={(e) => updateJobFields(app.id, { seniority: e.target.value })}
-                    placeholder="e.g., Senior, Staff, Manager"
-                  />
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <section className="rounded-xl border bg-card text-card-foreground shadow">
-            <div className="border-b px-4 py-3">
-              <div className="text-sm font-semibold">Job description</div>
-            </div>
-            <div className="p-4">
-              <div className="space-y-1">
-                <div className="flex items-baseline justify-between gap-3">
-                  <div className="text-sm font-medium">Paste the job posting</div>
-                  <div className="text-xs text-muted-foreground">
-                    We’ll use this as the target for tailoring.
-                  </div>
-                </div>
-                <Textarea
-                  value={app.job.descriptionText}
-                  onChange={(e) => updateJobFields(app.id, { descriptionText: e.target.value })}
-                  placeholder="Responsibilities, requirements, etc."
-                  className="min-h-56"
-                />
-              </div>
-            </div>
-          </section>
-
-          <section className="rounded-xl border bg-card text-card-foreground shadow">
-            <div className="border-b px-4 py-3">
-              <div className="text-sm font-semibold">Role requirements</div>
-            </div>
-            <div className="space-y-4 p-4">
-              <div className="space-y-1">
-                <div className="flex items-baseline justify-between gap-3">
-                  <div className="text-sm font-medium">Must-have</div>
-                  <div className="text-xs text-muted-foreground">
-                    Hard requirements you want prioritized
-                  </div>
-                </div>
-                <RequirementChips
-                  requirements={requirements}
-                  bucket="mustHave"
-                  onChange={(next) => updateRequirements(app.id, next)}
-                />
-              </div>
-              <div className="space-y-1">
-                <div className="text-sm font-medium">Nice-to-have</div>
-                <RequirementChips
-                  requirements={requirements}
-                  bucket="niceToHave"
-                  onChange={(next) => updateRequirements(app.id, next)}
-                />
-              </div>
-              <div className="space-y-1">
-                <div className="flex items-baseline justify-between gap-3">
-                  <div className="text-sm font-medium">Keywords</div>
-                  <div className="text-xs text-muted-foreground">ATS keywords, tools, acronyms</div>
-                </div>
-                <RequirementChips
-                  requirements={requirements}
-                  bucket="keywords"
-                  onChange={(next) => updateRequirements(app.id, next)}
-                />
-              </div>
-            </div>
-          </section>
+          <JobForm applicationId={app.id} applicationTitle={app.title} job={app.job} />
 
           <section className="rounded-xl border bg-card text-card-foreground shadow">
             <div className="border-b px-4 py-3">
