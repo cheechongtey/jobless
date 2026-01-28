@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 
+import { updateResumeAnalysisAnswers } from '@/entities/application/model/repo';
 import { Button } from '@/shared/ui/button';
 import { Textarea } from '@/shared/ui/textarea';
 
@@ -110,6 +111,7 @@ function priorityLabel(priority?: Priority) {
 export function ResumeAnalysisPanel(props: {
   applicationId: string;
   resumeAnalysis: unknown;
+  answers?: Record<string, string> | undefined;
   disabled?: boolean;
 }) {
   const { applicationId, resumeAnalysis, disabled } = props;
@@ -118,29 +120,22 @@ export function ResumeAnalysisPanel(props: {
   const gaps = getStringList(resumeAnalysis, 'gaps');
   const questions = getQuestionItems(resumeAnalysis);
 
-  const storageKey = `resumeAnalysisAnswers:${applicationId}`;
   const [answers, setAnswers] = React.useState<Record<string, string>>({});
   const [savedAt, setSavedAt] = React.useState<number | null>(null);
 
   React.useEffect(() => {
-    try {
-      const raw = localStorage.getItem(storageKey);
-      if (!raw) return;
-      const parsed: unknown = JSON.parse(raw);
-      if (!isRecord(parsed)) return;
-      const next: Record<string, string> = {};
-      for (const [k, v] of Object.entries(parsed)) {
+    const next: Record<string, string> = {};
+    if (isRecord(props.answers)) {
+      for (const [k, v] of Object.entries(props.answers)) {
         if (typeof v === 'string') next[k] = v;
       }
-      setAnswers(next);
-    } catch {
-      // ignore
     }
-  }, [storageKey]);
+    setAnswers(next);
+  }, [props.answers]);
 
-  const onSave = () => {
+  const onSave = async () => {
     try {
-      localStorage.setItem(storageKey, JSON.stringify(answers));
+      await updateResumeAnalysisAnswers(applicationId, answers);
       setSavedAt(Date.now());
     } catch {
       // ignore
@@ -208,7 +203,7 @@ export function ResumeAnalysisPanel(props: {
           </div>
           <div className="flex items-center gap-2">
             {savedAt ? <div className="text-xs text-muted-foreground">Saved</div> : null}
-            <Button disabled={disabled} variant="outline" onClick={onSave}>
+            <Button disabled={disabled} variant="outline" size="sm" onClick={onSave}>
               Save answers
             </Button>
           </div>
@@ -218,13 +213,27 @@ export function ResumeAnalysisPanel(props: {
           <div className="mt-3 space-y-4">
             {questions.map((q) => (
               <div key={q.id} className="rounded-md border p-3">
-                <div className="flex flex-wrap items-start justify-between gap-2">
+                <div className="flex max-md:flex-wrap items-start justify-between gap-2">
                   <div className="flex flex-col order-2 md:order-1">
                     <div className="text-sm font-medium">{q.question}</div>
                     {q.detail ? <div className="mt-1 text-xs text-muted-foreground">{q.detail}</div> : null}
                   </div>
                   <div className="order-1 md:order-2">{priorityLabel(q.priority)}</div>
                 </div>
+                {q.exampleAnswer ? (
+                  <div className="mt-2 flex items-center justify-between gap-2">
+                    <div className="text-xs text-muted-foreground">Suggested answer available</div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setAnswers((prev) => ({ ...prev, [q.id]: q.exampleAnswer ?? '' }))}
+                      disabled={disabled}
+                    >
+                      Use suggested
+                    </Button>
+                  </div>
+                ) : null}
                 <div className="mt-3">
                   <Textarea
                     value={answers[q.id] ?? ''}

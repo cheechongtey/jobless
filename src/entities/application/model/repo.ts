@@ -30,7 +30,7 @@ export async function createApplication(): Promise<Application> {
     resumeDraft: {
       headline: '',
       summary: '',
-      experience: '',
+      experience: [],
       projects: '',
       skills: '',
       education: '',
@@ -92,6 +92,14 @@ export async function updateJobAnalysis(id: UUID, jobAnalysis: JobAnalysis) {
 
 export async function updateResumeAnalysis(id: UUID, resumeAnalysis: ResumeAnalysis) {
   await appDb.applications.update(id, { resumeAnalysis, updatedAt: now() });
+}
+
+export async function updateResumeAnalysisAnswers(id: UUID, resumeAnalysisAnswers: Record<string, string>) {
+  await appDb.applications.update(id, { resumeAnalysisAnswers, updatedAt: now() });
+}
+
+export async function updateResumeDraft(id: UUID, resumeDraft: Application['resumeDraft']) {
+  await appDb.applications.update(id, { resumeDraft, updatedAt: now() });
 }
 
 export async function deleteApplication(id: UUID) {

@@ -105,3 +105,48 @@ export function combinedTailoringAnalysisPrompt(input: {
     resumeText,
   ]);
 }
+
+export function resumeDraftPrompt(input: {
+  jobDescriptionText: string;
+  jobMeta: Pick<Application['job'], 'company' | 'roleTitle' | 'location' | 'seniority'>;
+  requirements: Application['job']['requirements'];
+  resumeText: string;
+  jobAnalysis: unknown;
+  resumeAnalysis: unknown;
+  answers: Record<string, string> | undefined;
+}) {
+  const { jobDescriptionText, jobMeta, requirements, resumeText, jobAnalysis, resumeAnalysis, answers } = input;
+  return joinNonEmpty([
+    'You are an expert resume writer. Produce a tailored resume draft for this job.',
+    'Return ONLY valid JSON that matches the provided JSON Schema.',
+    'Be conservative: do not invent facts. Only use details present in the resume text or in the provided answers.',
+    '',
+    'Formatting rules:',
+    '- Each field is markdown-ish plain text.',
+    '- Experience must be a JSON array of roles. Each role must have company/title and a bullets array of strings.',
+    '- Use concise bullets (start with strong verbs).',
+    '- Include metrics ONLY if present in resume or answers.',
+    '- Keep sections tight and scannable.',
+    '',
+    'Job meta:',
+    JSON.stringify(jobMeta),
+    '',
+    'Structured requirements (user-provided):',
+    JSON.stringify(requirements),
+    '',
+    'Job description:',
+    jobDescriptionText,
+    '',
+    'Job analysis (JSON):',
+    JSON.stringify(jobAnalysis),
+    '',
+    'Resume analysis (JSON):',
+    JSON.stringify(resumeAnalysis),
+    '',
+    'Candidate answers (JSON):',
+    JSON.stringify(answers ?? {}),
+    '',
+    'Resume source text:',
+    resumeText,
+  ]);
+}

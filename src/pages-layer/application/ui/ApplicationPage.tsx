@@ -13,9 +13,10 @@ import {
   updateJobFields,
   updateRequirements,
   updateResumeAnalysis,
+  updateResumeDraft,
   updateResumeSourceText,
 } from '@/entities/application/model/repo';
-import type { JobAnalysis, Requirements, ResumeAnalysis } from '@/entities/application/model/types';
+import type { Application, JobAnalysis, Requirements, ResumeAnalysis } from '@/entities/application/model/types';
 import { RequirementChips } from '@/features/requirements-chips';
 import { ResumeUpload } from '@/features/resume-upload';
 import { ResumeAnalysisPanel } from '@/pages-layer/application/ui/ResumeAnalysisPanel';
@@ -52,6 +53,7 @@ function Content(props: { id: string }) {
   const app = useLiveQuery(() => getApplication(props.id), [props.id]);
   const [confirming, setConfirming] = React.useState(false);
   const [analyzing, setAnalyzing] = React.useState(false);
+  const [generating, setGenerating] = React.useState(false);
 
   if (app === undefined) {
     return (
@@ -110,12 +112,12 @@ function Content(props: { id: string }) {
                   >
                     Confirm delete
                   </Button>
-                  <Button variant="secondary" onClick={() => setConfirming(false)}>
+                  <Button variant="secondary" size="sm" onClick={() => setConfirming(false)}>
                     Cancel
                   </Button>
                 </>
               ) : (
-                <Button variant="destructive" onClick={() => setConfirming(true)}>
+                <Button variant="destructive" size="sm" onClick={() => setConfirming(true)}>
                   Delete
                 </Button>
               )}
@@ -141,6 +143,35 @@ function Content(props: { id: string }) {
                 }}
               >
                 {analyzing ? 'Analyzing…' : 'Analyze resume vs job'}
+              </Button>
+
+
+              <Button
+                disabled={generating || analyzing || !app.job.descriptionText.trim() || !app.resumeSourceText.trim()}
+                variant="secondary"
+                onClick={async () => {
+                  try {
+                    setGenerating(true);
+                    const result = await postJson<{ data: Application['resumeDraft'] }>(
+                      '/api/ai/resume-generate',
+                      {
+                        job: app.job,
+                        resumeText: app.resumeSourceText,
+                        jobAnalysis: app.jobAnalysis,
+                        resumeAnalysis: app.resumeAnalysis,
+                        answers: app.resumeAnalysisAnswers,
+                      },
+                    );
+                    await updateResumeDraft(app.id, result.data);
+                    toast.success('Draft generated');
+                  } catch (e) {
+                    toast.error(e instanceof Error ? e.message : 'Generation failed');
+                  } finally {
+                    setGenerating(false);
+                  }
+                }}
+              >
+                {generating ? 'Generating…' : 'Generate tailored resume'}
               </Button>
             </div>
           </div>
@@ -261,7 +292,122 @@ function Content(props: { id: string }) {
             </div>
             <div className="space-y-3 p-4">
               <div className="space-y-1">
-                <ResumeAnalysisPanel applicationId={app.id} resumeAnalysis={app.resumeAnalysis} disabled={analyzing} />
+                <ResumeAnalysisPanel
+                  applicationId={app.id}
+                  resumeAnalysis={app.resumeAnalysis}
+                  answers={app.resumeAnalysisAnswers}
+                  disabled={analyzing}
+                />
+              </div>
+            </div>
+          </section>
+
+          <section className="rounded-xl border bg-card text-card-foreground shadow">
+            <div className="flex items-center justify-between gap-3 border-b px-4 py-3">
+              <div className="text-sm font-semibold">Resume Draft</div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    try {
+                      const blob = new Blob([JSON.stringify(app.resumeDraft, null, 2)], {
+                        type: 'application/json;charset=utf-8',
+                      });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = `resumeDraft-${app.id}.json`;
+                      document.body.appendChild(a);
+                      a.click();
+                      a.remove();
+                      URL.revokeObjectURL(url);
+                      toast.success('Downloaded resumeDraft JSON');
+                    } catch {
+                      toast.error('Failed to download');
+                    }
+                  }}
+                >
+                  Download JSON
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(JSON.stringify(app.resumeDraft, null, 2));
+                      toast.success('Copied resumeDraft JSON');
+                    } catch {
+                      toast.error('Failed to copy');
+                    }
+                  }}
+                >
+                  Copy JSON
+                </Button>
+              </div>
+            </div>
+            <div className="space-y-3 p-4">
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                <div className="space-y-1">
+                  <div className="text-xs font-semibold text-muted-foreground">Headline</div>
+                  <div className="whitespace-pre-wrap text-sm">{app.resumeDraft.headline || '—'}</div>
+                </div>
+                <div className="space-y-1">
+                  <div className="text-xs font-semibold text-muted-foreground">Summary</div>
+                  <div className="whitespace-pre-wrap text-sm">{app.resumeDraft.summary || '—'}</div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="text-xs font-semibold text-muted-foreground">Experience</div>
+                {app.resumeDraft.experience?.length ? (
+                  <div className="space-y-3">
+                    {app.resumeDraft.experience.map((item, idx) => (
+                      <div key={`${idx}:${item.company}:${item.title}`} className="rounded-lg border bg-background p-3">
+                        <div className="flex flex-wrap items-baseline justify-between gap-2">
+                          <div className="text-sm font-medium">
+                            {item.title} — {item.company}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {[
+                              item.location,
+                              item.startDate && item.endDate ? `${item.startDate} – ${item.endDate}` : item.startDate ?? item.endDate,
+                            ]
+                              .filter(Boolean)
+                              .join(' • ') || '—'}
+                          </div>
+                        </div>
+                        {item.bullets?.length ? (
+                          <ul className="mt-2 list-disc space-y-1 pl-5 text-sm">
+                            {item.bullets.map((b, bIdx) => (
+                              <li key={`${bIdx}:${b}`}>{b}</li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <div className="mt-2 text-sm text-muted-foreground">—</div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-sm text-muted-foreground">—</div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                <div className="space-y-1">
+                  <div className="text-xs font-semibold text-muted-foreground">Projects</div>
+                  <div className="whitespace-pre-wrap text-sm">{app.resumeDraft.projects || '—'}</div>
+                </div>
+                <div className="space-y-1">
+                  <div className="text-xs font-semibold text-muted-foreground">Skills</div>
+                  <div className="whitespace-pre-wrap text-sm">{app.resumeDraft.skills || '—'}</div>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <div className="text-xs font-semibold text-muted-foreground">Education</div>
+                <div className="whitespace-pre-wrap text-sm">{app.resumeDraft.education || '—'}</div>
               </div>
             </div>
           </section>

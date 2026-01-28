@@ -9,63 +9,41 @@ export type Requirements = {
 export type RequirementBucket = keyof Requirements;
 
 export type JobAnalysis = {
-  role: {
+  schema: 'job_analysis_core.v1';
+  job: {
     company?: string;
     title?: string;
     location?: string;
-    seniority?: string;
-    function?: string;
     level: 'intern' | 'junior' | 'mid' | 'senior' | 'staff' | 'principal' | 'manager' | 'director' | 'unknown';
+    function?: string;
   };
-  responsibilities: string[];
-  skills: {
-    required: string[];
-    preferred: string[];
+  req: {
+    must: string[];
+    nice: string[];
     keywords: string[];
   };
-  senioritySignals: {
-    years?: number;
+  signals: {
+    minYears?: number;
     leadership?: boolean;
-    scopeSignals: string[];
+    ownership?: boolean;
+    domain?: string[];
   };
-  requirementMapping: Array<{
-    bucket: RequirementBucket;
-    item: string;
-    normalized?: string;
-  }>;
-  clarifyingQuestions: Array<{
-    question: string;
-    reason: string;
-    priority: 'high' | 'medium' | 'low';
-  }>;
 };
 
 export type ResumeAnalysis = {
+  schema: 'resume_analysis_core.v1';
   overall: {
     matchScore: number;
     summary: string;
   };
   strengths: string[];
   gaps: string[];
-  requirementCoverage: Array<{
-    bucket: RequirementBucket;
-    item: string;
-    covered: boolean;
-    evidence?: string;
-  }>;
-  bulletsCritique: Array<{
-    excerpt: string;
-    issues: Array<'no_metric' | 'vague' | 'too_long' | 'weak_verb' | 'redundant' | 'unclear_scope' | 'missing_tools'>;
-    suggestions: string[];
-  }>;
-  redFlags: Array<{
-    flag: string;
-    reason: string;
-    severity: 'low' | 'medium' | 'high';
-  }>;
-  clarifyingQuestions: Array<{
-    question: string;
-    reason: string;
+  recommendations: string[];
+  missingInfo: Array<{
+    question?: string;
+    field: string;
+    why: string;
+    exampleAnswer?: string;
     priority: 'high' | 'medium' | 'low';
   }>;
 };
@@ -79,10 +57,19 @@ export type JobPosting = {
   requirements: Requirements;
 };
 
+export type ExperienceItem = {
+  company: string;
+  title: string;
+  location?: string;
+  startDate?: string;
+  endDate?: string;
+  bullets: string[];
+};
+
 export type ResumeDraft = {
   headline: string;
   summary: string;
-  experience: string;
+  experience: ExperienceItem[];
   projects: string;
   skills: string;
   education: string;
@@ -98,6 +85,7 @@ export type Application = {
   resumeDraft: ResumeDraft;
   jobAnalysis?: JobAnalysis;
   resumeAnalysis?: ResumeAnalysis;
+  resumeAnalysisAnswers?: Record<string, string>;
 };
 
 export type ResumeSnapshot = {

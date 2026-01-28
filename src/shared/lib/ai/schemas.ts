@@ -226,3 +226,31 @@ export function combinedJobResumeAnalysisJsonSchema() {
 export function combinedTailoringAnalysisJsonSchema() {
   return toJsonSchema(CombinedTailoringAnalysisSchema);
 }
+
+export const ResumeDraftSchema = z
+  .object({
+    headline: z.string(),
+    summary: z.string(),
+    experience: z.array(
+      z
+        .object({
+          company: z.string(),
+          title: z.string(),
+          location: z.string().optional(),
+          startDate: z.string().optional(),
+          endDate: z.string().optional(),
+          bullets: z.array(z.string()),
+        })
+        .strict(),
+    ),
+    projects: z.string(),
+    skills: z.string(),
+    education: z.string(),
+  })
+  .strict();
+
+export type ResumeDraft = z.infer<typeof ResumeDraftSchema>;
+
+export function resumeDraftJsonSchema() {
+  return toJsonSchema(ResumeDraftSchema);
+}
