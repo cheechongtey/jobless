@@ -22,8 +22,8 @@ import { ResumeUpload } from '@/features/resume-upload';
 import { ResumeAnalysisPanel } from '@/pages-layer/application/ui/ResumeAnalysisPanel';
 import { Button } from '@/shared/ui/button';
 import { Input } from '@/shared/ui/input';
+import { SidebarTrigger } from '@/shared/ui/sidebar';
 import { Textarea } from '@/shared/ui/textarea';
-import { ApplicationsSidebar } from '@/widgets/applications-sidebar';
 
 async function postJson<T>(url: string, body: unknown): Promise<T> {
   const res = await fetch(url, {
@@ -49,7 +49,7 @@ async function postJson<T>(url: string, body: unknown): Promise<T> {
   return json as T;
 }
 
-function Content(props: { id: string }) {
+export function ApplicationPage(props: { id: string }) {
   const app = useLiveQuery(() => getApplication(props.id), [props.id]);
   const [confirming, setConfirming] = React.useState(false);
   const [analyzing, setAnalyzing] = React.useState(false);
@@ -57,13 +57,8 @@ function Content(props: { id: string }) {
 
   if (app === undefined) {
     return (
-      <div className="flex min-h-screen bg-zinc-50 text-zinc-900 dark:bg-black dark:text-zinc-50">
-        <div className="hidden w-72 md:block">
-          <ApplicationsSidebar activeId={props.id} />
-        </div>
-        <div className="flex flex-1 items-center justify-center p-6">
-          <div className="text-sm text-zinc-500 dark:text-zinc-400">Loading…</div>
-        </div>
+      <div className="flex flex-1 items-center justify-center p-6">
+        <div className="text-sm text-zinc-500 dark:text-zinc-400">Loading…</div>
       </div>
     );
   }
@@ -84,13 +79,18 @@ function Content(props: { id: string }) {
   const requirements: Requirements = app.job.requirements;
 
   return (
-    <div className="flex min-h-screen bg-zinc-50 text-zinc-900 dark:bg-black dark:text-zinc-50">
-      <div className="hidden w-72 md:block">
-        <ApplicationsSidebar activeId={props.id} />
-      </div>
-
-      <main className="flex-1 p-4 md:p-6">
-        <div className="mx-auto flex w-full max-w-5xl flex-col gap-4">
+    // <SidebarProvider className="bg-zinc-50 text-zinc-900 dark:bg-black dark:text-zinc-50">
+    //   <ApplicationsSidebar activeId={props.id} />
+    //   <SidebarInset className="min-h-screen">
+        
+    //   </SidebarInset>
+    // </SidebarProvider>
+          <main className="flex-1 p-4 md:p-6">
+          <div className="mx-auto flex w-full max-w-5xl flex-col gap-4">
+            <div className="flex items-center gap-2 md:hidden">
+              <SidebarTrigger />
+              <div className="text-sm font-medium">Jobs</div>
+            </div>
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <div className="text-xs text-zinc-500 dark:text-zinc-400">Application</div>
@@ -415,12 +415,7 @@ function Content(props: { id: string }) {
           <div className="rounded-xl border bg-card p-4 text-sm text-muted-foreground shadow">
             Next: Resume editor + chat will appear here.
           </div>
-        </div>
-      </main>
-    </div>
+          </div>
+        </main>
   );
-}
-
-export function ApplicationPage(props: { id: string }) {
-  return <Content id={props.id} />;
 }
