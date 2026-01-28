@@ -75,8 +75,12 @@ export function ResumeSidebar(props: { activeId?: UUID }) {
                     <SidebarMenuButton asChild isActive={active} className="h-auto py-2">
                       <Link href={`/a/${a.id}`}>
                         <div className="flex min-w-0 flex-1 flex-col">
-                          <span className="truncate text-sm font-medium">{a.title || 'Untitled'}</span>
-                          <span className="truncate text-xs text-muted-foreground">{a.job.company || '—'}</span>
+                          <span className="truncate text-sm font-medium">
+                            {a.title || 'Untitled'}
+                          </span>
+                          <span className="truncate text-xs text-muted-foreground">
+                            {a.job.company || '—'}
+                          </span>
                         </div>
                         <span className="ml-auto shrink-0 text-xs text-muted-foreground">
                           {formatTime(a.updatedAt)}

@@ -54,7 +54,7 @@ async function postJson<T>(url: string, body: unknown): Promise<T> {
   return json as T;
 }
 
-export function ApplicationPage(props: { id: string }) {
+export function ApplicationContent(props: { id: string }) {
   const app = useLiveQuery(() => getApplication(props.id), [props.id]);
   const [confirming, setConfirming] = React.useState(false);
   const [analyzing, setAnalyzing] = React.useState(false);

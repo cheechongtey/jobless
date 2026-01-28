@@ -1,6 +1,6 @@
-import { ApplicationPage } from '@/pages-layer/application';
+import { ApplicationContent } from '@/pages-layer/application/ui/application-content';
 
 export default async function Page({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params
-  return <ApplicationPage id={id} />;
+  const { id } = await params;
+  return <ApplicationContent id={id} />;
 }
