@@ -83,6 +83,19 @@ const eslintConfig = defineConfig([
       ],
       '@typescript-eslint/no-misused-promises': 'off',
       '@typescript-eslint/no-floating-promises': 'off',
+      '@typescript-eslint/no-explicit-any': 'warn',
+    '@typescript-eslint/no-unused-vars': [
+      'error',
+      // Allow unused variables prefixed with `_` to avoid warnings for intentionally unused parameters
+      // or destructured values.
+      // Reference: https://johnnyreilly.com/typescript-eslint-no-unused-vars#the-eslint-settings
+      {
+        args: 'all',
+        argsIgnorePattern: '^_',
+        destructuredArrayIgnorePattern: '^_',
+        varsIgnorePattern: '^_',
+      },
+    ],
     },
   },
 ]);
