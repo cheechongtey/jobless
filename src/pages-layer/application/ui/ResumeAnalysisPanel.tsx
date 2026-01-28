@@ -152,24 +152,22 @@ export function ResumeAnalysisPanel(props: {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-lg border bg-background p-3">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="text-xs font-semibold text-muted-foreground">Resume analysis</div>
-          {typeof scorePct === 'number' ? (
-            <div className="text-xs text-muted-foreground">Match score: {scorePct}/100</div>
-          ) : null}
-        </div>
-
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="text-xs font-semibold text-muted-foreground">Resume Score</div>
         {typeof scorePct === 'number' ? (
-          <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-900">
-            <div className="h-full bg-zinc-900 dark:bg-zinc-100" style={{ width: `${scorePct}%` }} />
-          </div>
+          <div className="text-xs text-muted-foreground">Match score: {scorePct}/100</div>
         ) : null}
+      </div>
 
-        <div className="mt-3 text-sm">
-          <div className="text-xs font-semibold text-muted-foreground">Summary</div>
-          <div className="mt-1 whitespace-pre-wrap">{overall.summary ?? '—'}</div>
+      {typeof scorePct === 'number' ? (
+        <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-900">
+          <div className="h-full bg-zinc-900 dark:bg-zinc-100" style={{ width: `${scorePct}%` }} />
         </div>
+      ) : null}
+
+      <div className="mt-3 text-sm">
+        <div className="text-xs font-semibold text-muted-foreground">Summary</div>
+        <div className="mt-1 whitespace-pre-wrap">{overall.summary ?? '—'}</div>
       </div>
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -221,10 +219,12 @@ export function ResumeAnalysisPanel(props: {
             {questions.map((q) => (
               <div key={q.id} className="rounded-md border p-3">
                 <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div className="text-sm font-medium">{q.question}</div>
-                  {priorityLabel(q.priority)}
+                  <div className="flex flex-col order-2 md:order-1">
+                    <div className="text-sm font-medium">{q.question}</div>
+                    {q.detail ? <div className="mt-1 text-xs text-muted-foreground">{q.detail}</div> : null}
+                  </div>
+                  <div className="order-1 md:order-2">{priorityLabel(q.priority)}</div>
                 </div>
-                {q.detail ? <div className="mt-1 text-xs text-muted-foreground">{q.detail}</div> : null}
                 <div className="mt-3">
                   <Textarea
                     value={answers[q.id] ?? ''}

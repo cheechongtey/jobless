@@ -115,10 +115,33 @@ function Content(props: { id: string }) {
                   </Button>
                 </>
               ) : (
-                <Button variant="secondary" onClick={() => setConfirming(true)}>
+                <Button variant="destructive" onClick={() => setConfirming(true)}>
                   Delete
                 </Button>
               )}
+              <Button
+                disabled={analyzing}
+                onClick={async () => {
+                  try {
+                    setAnalyzing(true);
+                    const result = await postJson<{
+                      data: { jobAnalysis: JobAnalysis; resumeAnalysis: ResumeAnalysis };
+                    }>('/api/ai/resume-analysis', {
+                      job: app.job,
+                      resumeText: app.resumeSourceText,
+                    });
+                    await updateJobAnalysis(app.id, result.data.jobAnalysis);
+                    await updateResumeAnalysis(app.id, result.data.resumeAnalysis);
+                    toast.success('Analysis saved');
+                  } catch (e) {
+                    toast.error(e instanceof Error ? e.message : 'Analysis failed');
+                  } finally {
+                    setAnalyzing(false);
+                  }
+                }}
+              >
+                {analyzing ? 'Analyzing…' : 'Analyze resume vs job'}
+              </Button>
             </div>
           </div>
 
@@ -232,41 +255,12 @@ function Content(props: { id: string }) {
             </section>
           </div>
 
-          <section className="rounded-xl border bg-card p-4 shadow">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <div className="text-sm font-semibold">AI analysis</div>
-                <div className="text-xs text-muted-foreground">Runs locally-stored data through server-side Gemini.</div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  disabled={analyzing}
-                  onClick={async () => {
-                    try {
-                      setAnalyzing(true);
-                      const result = await postJson<{
-                        data: { jobAnalysis: JobAnalysis; resumeAnalysis: ResumeAnalysis };
-                      }>('/api/ai/resume-analysis', {
-                        job: app.job,
-                        resumeText: app.resumeSourceText,
-                      });
-                      await updateJobAnalysis(app.id, result.data.jobAnalysis);
-                      await updateResumeAnalysis(app.id, result.data.resumeAnalysis);
-                      toast.success('Analysis saved');
-                    } catch (e) {
-                      toast.error(e instanceof Error ? e.message : 'Analysis failed');
-                    } finally {
-                      setAnalyzing(false);
-                    }
-                  }}
-                >
-                  {analyzing ? 'Analyzing…' : 'Analyze resume vs job'}
-                </Button>
-              </div>
+          <section className="rounded-xl border bg-card text-card-foreground shadow">
+            <div className="border-b px-4 py-3">
+              <div className="text-sm font-semibold">Resume Analysis</div>
             </div>
-
-            <div className="mt-4">
-              <div className="rounded-lg border bg-background p-3">
+            <div className="space-y-3 p-4">
+              <div className="space-y-1">
                 <ResumeAnalysisPanel applicationId={app.id} resumeAnalysis={app.resumeAnalysis} disabled={analyzing} />
               </div>
             </div>
