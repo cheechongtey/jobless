@@ -2,16 +2,18 @@
 // Some Next.js versions/configs don't support `next lint --fix`, so lint-staged
 // uses `eslint --fix` for reliability.
 
-// const path = require('path');
+const path = require('path');
 
 // see: https://nextjs.org/docs/app/building-your-application/configuring/eslint#lint-staged
-// const buildEslintCommand = (filenames) =>
-//   `eslint --fix --file ${filenames
-//     // need to use __dirname instead of process.cwd() because lint-staged runs from the root of the repo
-//     .map((f) => path.relative(__dirname, f))
-//     .join(' --file ')}`;
+const buildEslintCommand = (filenames) => {
+  const files = filenames
+    // need to use __dirname instead of process.cwd() because lint-staged runs from the root of the repo
+    .map((f) => path.relative(__dirname, f))
+    .map((f) => `"${f}"`)
+    .join(' ');
 
-const buildEslintCommand = () => `eslint --fix`;
+  return `eslint --fix ${files}`;
+};
 
 module.exports = {
   '*.{js,jsx,ts,tsx}': [buildEslintCommand],
