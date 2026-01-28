@@ -80,11 +80,11 @@ Example mapping:
   - ❌ Parse into structured sections when possible; fall back to plain text if parsing fails.
 
 ### 2) AI processing
-- ❌ Job analysis:
-  - ❌ Extract responsibilities, must-have skills, nice-to-have skills, and domain keywords.
-  - ❌ Identify seniority signals (IC vs manager, years, leadership expectations).
-- ❌ Resume analysis:
-  - ❌ Detect gaps vs job requirements.
+- 🚧 Job analysis:
+  - 🚧 Extract responsibilities, must-have skills, nice-to-have skills, and domain keywords.
+  - 🚧 Identify seniority signals (IC vs manager, years, leadership expectations).
+- 🚧 Resume analysis:
+  - ✅ Detect gaps vs job requirements.
   - ❌ Flag unclear bullets, missing metrics, repetition, and weak verbs.
   - ❌ Detect potential red flags (inconsistencies, overly long bullets, missing context).
 - ❌ Tailoring/generation:
@@ -92,6 +92,21 @@ Example mapping:
   - ❌ Rewrite experience bullets to emphasize relevant impact while preserving factual claims.
   - ❌ Suggest skills list alignment and keyword coverage.
   - ❌ Ask clarifying questions when needed (e.g., missing metrics, tools used, scope).
+
+#### 2a) AI API endpoints (separate “tailoring” vs “full analysis”)
+- 🚧 **Tailoring-first (one-call)**: `POST /api/ai/resume-analysis`
+  - ✅ Single LLM call returns **both** `{ jobAnalysis, resumeAnalysis }` in one JSON response (schema-validated)
+  - ✅ Output optimized for resume tailoring (compact / focused defaults)
+  - ❌ Enforce input size limits (JD + resume) to control cost/latency
+  - ❌ PII-safe logging (lengths/hashes/metrics; avoid raw resume/JD in logs)
+  - ✅ Consistent error taxonomy (400 invalid input; 502 invalid model output; 500 unknown)
+
+- ❌ **Full analysis (two-calls)**: `POST /api/ai/resume-analysis/full`
+  - ❌ Step 1: Job analysis call produces structured job context (schema-validated)
+  - ❌ Step 2: Resume analysis call uses the **actual Step 1 output** (not a hardcoded stub)
+  - ❌ Returns a verbose “analysis view” payload (suitable for UI inspection/debugging)
+  - ❌ Optional evidence mapping: for each requirement, include short JD/resume snippets (capped)
+  - ❌ Higher token budget allowed (e.g. up to 8192) vs tailoring endpoint
 
 ### 3) Chat experience
 - ❌ Chat UI tied to the current Application.

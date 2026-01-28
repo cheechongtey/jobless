@@ -1,7 +1,7 @@
 import { appDb } from '@/shared/lib/db/appDb';
 import { uuid } from '@/shared/lib/id';
 
-import type { Application, Requirements, UUID } from './types';
+import type { Application, JobAnalysis, Requirements, ResumeAnalysis, UUID } from './types';
 
 function now() {
   return Date.now();
@@ -84,6 +84,14 @@ export async function updateRequirements(id: UUID, next: Requirements) {
 
 export async function updateResumeSourceText(id: UUID, resumeSourceText: string) {
   await appDb.applications.update(id, { resumeSourceText, updatedAt: now() });
+}
+
+export async function updateJobAnalysis(id: UUID, jobAnalysis: JobAnalysis) {
+  await appDb.applications.update(id, { jobAnalysis, updatedAt: now() });
+}
+
+export async function updateResumeAnalysis(id: UUID, resumeAnalysis: ResumeAnalysis) {
+  await appDb.applications.update(id, { resumeAnalysis, updatedAt: now() });
 }
 
 export async function deleteApplication(id: UUID) {

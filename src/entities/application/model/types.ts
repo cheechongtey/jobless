@@ -6,6 +6,70 @@ export type Requirements = {
   keywords: string[];
 };
 
+export type RequirementBucket = keyof Requirements;
+
+export type JobAnalysis = {
+  role: {
+    company?: string;
+    title?: string;
+    location?: string;
+    seniority?: string;
+    function?: string;
+    level: 'intern' | 'junior' | 'mid' | 'senior' | 'staff' | 'principal' | 'manager' | 'director' | 'unknown';
+  };
+  responsibilities: string[];
+  skills: {
+    required: string[];
+    preferred: string[];
+    keywords: string[];
+  };
+  senioritySignals: {
+    years?: number;
+    leadership?: boolean;
+    scopeSignals: string[];
+  };
+  requirementMapping: Array<{
+    bucket: RequirementBucket;
+    item: string;
+    normalized?: string;
+  }>;
+  clarifyingQuestions: Array<{
+    question: string;
+    reason: string;
+    priority: 'high' | 'medium' | 'low';
+  }>;
+};
+
+export type ResumeAnalysis = {
+  overall: {
+    matchScore: number;
+    summary: string;
+  };
+  strengths: string[];
+  gaps: string[];
+  requirementCoverage: Array<{
+    bucket: RequirementBucket;
+    item: string;
+    covered: boolean;
+    evidence?: string;
+  }>;
+  bulletsCritique: Array<{
+    excerpt: string;
+    issues: Array<'no_metric' | 'vague' | 'too_long' | 'weak_verb' | 'redundant' | 'unclear_scope' | 'missing_tools'>;
+    suggestions: string[];
+  }>;
+  redFlags: Array<{
+    flag: string;
+    reason: string;
+    severity: 'low' | 'medium' | 'high';
+  }>;
+  clarifyingQuestions: Array<{
+    question: string;
+    reason: string;
+    priority: 'high' | 'medium' | 'low';
+  }>;
+};
+
 export type JobPosting = {
   company: string;
   roleTitle: string;
@@ -32,6 +96,8 @@ export type Application = {
   job: JobPosting;
   resumeSourceText: string;
   resumeDraft: ResumeDraft;
+  jobAnalysis?: JobAnalysis;
+  resumeAnalysis?: ResumeAnalysis;
 };
 
 export type ResumeSnapshot = {

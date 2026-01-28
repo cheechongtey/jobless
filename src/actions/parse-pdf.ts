@@ -1,9 +1,10 @@
 // app/actions.ts
 'use server';
 
-import { normalizeText } from '@/shared/lib/text';
 import mammoth from 'mammoth';
 import { PDFParse } from 'pdf-parse';
+
+import { normalizeText } from '@/shared/lib/text';
 
 const MAX_RESUME_BYTES = 5 * 1024 * 1024;
 

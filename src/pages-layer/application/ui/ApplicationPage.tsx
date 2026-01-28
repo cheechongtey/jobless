@@ -1,7 +1,7 @@
 'use client';
 
-import Link from 'next/link';
 import { useLiveQuery } from 'dexie-react-hooks';
+import Link from 'next/link';
 import * as React from 'react';
 import { toast } from 'sonner';
 
@@ -9,21 +9,49 @@ import {
   deleteApplication,
   getApplication,
   updateApplicationTitle,
+  updateJobAnalysis,
   updateJobFields,
   updateRequirements,
+  updateResumeAnalysis,
   updateResumeSourceText,
 } from '@/entities/application/model/repo';
-import type { Requirements } from '@/entities/application/model/types';
+import type { JobAnalysis, Requirements, ResumeAnalysis } from '@/entities/application/model/types';
 import { RequirementChips } from '@/features/requirements-chips';
 import { ResumeUpload } from '@/features/resume-upload';
+import { ResumeAnalysisPanel } from '@/pages-layer/application/ui/ResumeAnalysisPanel';
 import { Button } from '@/shared/ui/button';
 import { Input } from '@/shared/ui/input';
 import { Textarea } from '@/shared/ui/textarea';
 import { ApplicationsSidebar } from '@/widgets/applications-sidebar';
 
+async function postJson<T>(url: string, body: unknown): Promise<T> {
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
+
+  const json = (await res.json()) as unknown;
+  if (!res.ok) {
+    if (
+      json &&
+      typeof json === 'object' &&
+      'error' in json &&
+      typeof (json as { error?: unknown }).error === 'string'
+    ) {
+      throw new Error((json as { error: string }).error);
+    }
+    throw new Error(`Request failed (${res.status})`);
+  }
+  return json as T;
+}
+
 function Content(props: { id: string }) {
   const app = useLiveQuery(() => getApplication(props.id), [props.id]);
   const [confirming, setConfirming] = React.useState(false);
+  const [analyzing, setAnalyzing] = React.useState(false);
 
   if (app === undefined) {
     return (
@@ -203,6 +231,46 @@ function Content(props: { id: string }) {
               </div>
             </section>
           </div>
+
+          <section className="rounded-xl border bg-card p-4 shadow">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <div className="text-sm font-semibold">AI analysis</div>
+                <div className="text-xs text-muted-foreground">Runs locally-stored data through server-side Gemini.</div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  disabled={analyzing}
+                  onClick={async () => {
+                    try {
+                      setAnalyzing(true);
+                      const result = await postJson<{
+                        data: { jobAnalysis: JobAnalysis; resumeAnalysis: ResumeAnalysis };
+                      }>('/api/ai/resume-analysis', {
+                        job: app.job,
+                        resumeText: app.resumeSourceText,
+                      });
+                      await updateJobAnalysis(app.id, result.data.jobAnalysis);
+                      await updateResumeAnalysis(app.id, result.data.resumeAnalysis);
+                      toast.success('Analysis saved');
+                    } catch (e) {
+                      toast.error(e instanceof Error ? e.message : 'Analysis failed');
+                    } finally {
+                      setAnalyzing(false);
+                    }
+                  }}
+                >
+                  {analyzing ? 'Analyzing…' : 'Analyze resume vs job'}
+                </Button>
+              </div>
+            </div>
+
+            <div className="mt-4">
+              <div className="rounded-lg border bg-background p-3">
+                <ResumeAnalysisPanel applicationId={app.id} resumeAnalysis={app.resumeAnalysis} disabled={analyzing} />
+              </div>
+            </div>
+          </section>
 
           <div className="rounded-xl border bg-card p-4 text-sm text-muted-foreground shadow">
             Next: Resume editor + chat will appear here.

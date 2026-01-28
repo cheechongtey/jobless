@@ -1,7 +1,7 @@
 'use client';
 
-import Link from 'next/link';
 import { useLiveQuery } from 'dexie-react-hooks';
+import Link from 'next/link';
 
 import { createApplication, listApplications } from '@/entities/application/model/repo';
 import { Button } from '@/shared/ui/button';
