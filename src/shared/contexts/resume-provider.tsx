@@ -2,16 +2,10 @@
 
 import { ResumeSidebar } from '@/pages-layer/application/ui/resume-sidebar/resume-sidebar';
 
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from '../ui/breadcrumb';
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList } from '../ui/breadcrumb';
 import { Separator } from '../ui/separator';
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '../ui/sidebar';
+import { ThemeToggle } from '../ui/theme-toggle';
 
 type AppProviderProps = {
   children: React.ReactNode;
@@ -36,12 +30,10 @@ export const ResumeProvider = ({ children }: AppProviderProps) => {
               <BreadcrumbItem className="hidden md:block">
                 <BreadcrumbLink href="#">Building Your Application</BreadcrumbLink>
               </BreadcrumbItem>
-              <BreadcrumbSeparator className="hidden md:block" />
-              <BreadcrumbItem>
-                <BreadcrumbPage>Data Fetching</BreadcrumbPage>
-              </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
+          <div className="ml-auto" />
+          <ThemeToggle />
         </header>
         {children}
       </SidebarInset>

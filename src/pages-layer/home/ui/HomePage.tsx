@@ -4,17 +4,17 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import Link from 'next/link';
 
 import { createApplication, listApplications } from '@/entities/application/model/repo';
+import { ResumeSidebar } from '@/pages-layer/application/ui/resume-sidebar/resume-sidebar';
 import { Button } from '@/shared/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card';
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/shared/ui/sidebar';
-import { ApplicationsSidebar } from '@/widgets/applications-sidebar';
 
 export function HomePage() {
   const apps = useLiveQuery(() => listApplications(), []);
 
   return (
     <SidebarProvider className="bg-zinc-50 text-zinc-900 dark:bg-black dark:text-zinc-50">
-      <ApplicationsSidebar />
+      <ResumeSidebar />
       <SidebarInset className="min-h-screen">
         <main className="flex flex-1 items-center justify-center p-6">
           <div className="absolute top-3 left-3 md:hidden">
@@ -25,7 +25,8 @@ export function HomePage() {
               <div className="text-xs text-muted-foreground">MVP</div>
               <CardTitle className="text-xl">Resume tailor</CardTitle>
               <CardDescription>
-                Create an application per role, add the job description + requirements, then paste or upload your resume.
+                Create an application per role, add the job description + requirements, then paste
+                or upload your resume.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -45,7 +46,9 @@ export function HomePage() {
                 ) : null}
               </div>
 
-              <div className="mt-6 text-xs text-muted-foreground">Data is stored locally in your browser.</div>
+              <div className="mt-6 text-xs text-muted-foreground">
+                Data is stored locally in your browser.
+              </div>
             </CardContent>
           </Card>
         </main>

@@ -11,15 +11,12 @@ import {
   updateJobAnalysis,
   updateResumeAnalysis,
   updateResumeDraft,
-  updateResumeSourceText,
 } from '@/entities/application/model/repo';
 import type { Application, JobAnalysis, ResumeAnalysis } from '@/entities/application/model/types';
-import { JobForm } from '@/features/job-form/ui/job-form';
-import { ResumeUpload } from '@/features/resume-upload';
-import { ResumeAnalysisPanel } from '@/pages-layer/application/ui/ResumeAnalysisPanel';
+import { AnalysisResult } from '@/features/resume/analysis-result/ui/analysis-result';
+import { JobForm } from '@/features/resume/job-form/ui/job-form';
+import { ResumeForm } from '@/features/resume/resume-form/ui/resume-form';
 import { Button } from '@/shared/ui/button';
-import { SidebarTrigger } from '@/shared/ui/sidebar';
-import { Textarea } from '@/shared/ui/textarea';
 
 async function postJson<T>(url: string, body: unknown): Promise<T> {
   const res = await fetch(url, {
@@ -73,27 +70,25 @@ export function ApplicationContent(props: { id: string }) {
   }
 
   return (
-    // <SidebarProvider className="bg-zinc-50 text-zinc-900 dark:bg-black dark:text-zinc-50">
-    //   <ApplicationsSidebar activeId={props.id} />
-    //   <SidebarInset className="min-h-screen">
-
-    //   </SidebarInset>
-    // </SidebarProvider>
-    <main className="flex-1 p-4 md:p-6">
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-4">
-        <div className="flex items-center gap-2 md:hidden">
-          <SidebarTrigger />
-          <div className="text-sm font-medium">Jobs</div>
+    <main className="p-4 flex-1">
+      <div className="min-w-0 mb-4">
+        <h1 className="truncate text-xl font-semibold">{app.title}</h1>
+      </div>
+      <div className="relative grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="space-y-6">
+          <JobForm applicationId={app.id} applicationTitle={app.title} job={app.job} />
+          <ResumeForm applicationId={app.id} resumeSourceText={app.resumeSourceText} />
         </div>
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <div className="text-xs text-zinc-500 dark:text-zinc-400">Application</div>
-            <h1 className="truncate text-lg font-semibold">{app.title}</h1>
-            <div className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-              Stored locally in your browser. You can delete anytime.
-            </div>
-          </div>
+        <div className="space-y-6 lg:sticky lg:top-6 lg:self-start">
+          <AnalysisResult
+            applicationId={app.id}
+            resumeAnalysis={app.resumeAnalysis}
+            answers={app.resumeAnalysisAnswers}
+            disabled={analyzing}
+          />
+        </div>
 
+        <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2">
             {confirming ? (
               <>
@@ -173,55 +168,6 @@ export function ApplicationContent(props: { id: string }) {
             </Button>
           </div>
         </div>
-
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <JobForm applicationId={app.id} applicationTitle={app.title} job={app.job} />
-
-          <section className="rounded-xl border bg-card text-card-foreground shadow">
-            <div className="border-b px-4 py-3">
-              <div className="text-sm font-semibold">Your resume</div>
-            </div>
-            <div className="space-y-3 p-4">
-              <div className="space-y-1">
-                <div className="flex items-baseline justify-between gap-3">
-                  <div className="text-sm font-medium">Upload PDF/DOCX (optional)</div>
-                  <div className="text-xs text-muted-foreground">
-                    If parsing fails, just paste the text below.
-                  </div>
-                </div>
-                <ResumeUpload
-                  onParsedText={(text) => updateResumeSourceText(app.id, text)}
-                  onError={(msg) => toast.error(msg)}
-                />
-              </div>
-              <div className="space-y-1">
-                <div className="text-sm font-medium">Paste resume text</div>
-                <Textarea
-                  value={app.resumeSourceText}
-                  onChange={(e) => updateResumeSourceText(app.id, e.target.value)}
-                  placeholder="Paste your current resume here…"
-                  className="min-h-56"
-                />
-              </div>
-            </div>
-          </section>
-        </div>
-
-        <section className="rounded-xl border bg-card text-card-foreground shadow">
-          <div className="border-b px-4 py-3">
-            <div className="text-sm font-semibold">Resume Analysis</div>
-          </div>
-          <div className="space-y-3 p-4">
-            <div className="space-y-1">
-              <ResumeAnalysisPanel
-                applicationId={app.id}
-                resumeAnalysis={app.resumeAnalysis}
-                answers={app.resumeAnalysisAnswers}
-                disabled={analyzing}
-              />
-            </div>
-          </div>
-        </section>
 
         <section className="rounded-xl border bg-card text-card-foreground shadow">
           <div className="flex items-center justify-between gap-3 border-b px-4 py-3">

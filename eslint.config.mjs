@@ -16,10 +16,12 @@ const eslintConfig = defineConfig([
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:
-    ".next/**",
-    "out/**",
-    "build/**",
-    "next-env.d.ts",
+    '.next/**',
+    'out/**',
+    'build/**',
+    'next-env.d.ts',
+    // Tooling configs that are executed by Node (CJS)
+    'lint-staged.config.cjs',
   ]),
 
   // Project rules (phased rollout). Restrict to app code.
