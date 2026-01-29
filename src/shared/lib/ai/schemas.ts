@@ -12,7 +12,17 @@ export const JobAnalysisSchema = z
         location: z.string().optional(),
         seniority: z.string().optional(),
         function: z.string().optional(),
-        level: z.enum(['intern', 'junior', 'mid', 'senior', 'staff', 'principal', 'manager', 'director', 'unknown']),
+        level: z.enum([
+          'intern',
+          'junior',
+          'mid',
+          'senior',
+          'staff',
+          'principal',
+          'manager',
+          'director',
+          'unknown',
+        ]),
       })
       .describe('Best-effort extraction of role metadata'),
 
@@ -43,7 +53,7 @@ export const JobAnalysisSchema = z
           bucket: RequirementBucketSchema,
           item: z.string(),
           normalized: z.string().optional(),
-        }),
+        })
       )
       .describe('Normalized structured requirements (from chips) for later coverage scoring'),
 
@@ -53,7 +63,7 @@ export const JobAnalysisSchema = z
           question: z.string(),
           reason: z.string(),
           priority: z.enum(['high', 'medium', 'low']),
-        }),
+        })
       )
       .describe('Questions to ask the user to improve tailoring accuracy'),
   })
@@ -88,9 +98,19 @@ export const ResumeAnalysisSchema = z
       .array(
         z.object({
           excerpt: z.string().describe('Original bullet excerpt'),
-          issues: z.array(z.enum(['no_metric', 'vague', 'too_long', 'weak_verb', 'redundant', 'unclear_scope', 'missing_tools'])),
+          issues: z.array(
+            z.enum([
+              'no_metric',
+              'vague',
+              'too_long',
+              'weak_verb',
+              'redundant',
+              'unclear_scope',
+              'missing_tools',
+            ])
+          ),
           suggestions: z.array(z.string()).describe('Concrete improvement suggestions'),
-        }),
+        })
       )
       .describe('Issues detected in current resume bullets'),
 
@@ -100,7 +120,7 @@ export const ResumeAnalysisSchema = z
           flag: z.string(),
           reason: z.string(),
           severity: z.enum(['low', 'medium', 'high']),
-        }),
+        })
       )
       .describe('Potential inconsistencies or risks to verify'),
 
@@ -110,7 +130,7 @@ export const ResumeAnalysisSchema = z
           question: z.string(),
           reason: z.string(),
           priority: z.enum(['high', 'medium', 'low']),
-        }),
+        })
       )
       .describe('Questions to ask user to improve tailoring accuracy'),
   })
@@ -128,7 +148,17 @@ export const JobAnalysisCoreSchema = z
         company: z.string().optional(),
         title: z.string().optional(),
         location: z.string().optional(),
-        level: z.enum(['intern', 'junior', 'mid', 'senior', 'staff', 'principal', 'manager', 'director', 'unknown']),
+        level: z.enum([
+          'intern',
+          'junior',
+          'mid',
+          'senior',
+          'staff',
+          'principal',
+          'manager',
+          'director',
+          'unknown',
+        ]),
         function: z.string().optional(),
       })
       .strict(),
@@ -169,14 +199,21 @@ export const ResumeAnalysisCoreSchema = z
         z
           .object({
             question: z.string().optional().describe('A direct question the candidate can answer'),
-            field: z.string().describe('What information is missing (e.g., metric, tool, scope, timeline)'),
+            field: z
+              .string()
+              .describe('What information is missing (e.g., metric, tool, scope, timeline)'),
             why: z.string().describe('How it would improve tailoring or credibility'),
-            exampleAnswer: z.string().optional().describe('An example of the kind of answer expected'),
+            exampleAnswer: z
+              .string()
+              .optional()
+              .describe('An example of the kind of answer expected'),
             priority: z.enum(['high', 'medium', 'low']),
           })
-          .strict(),
+          .strict()
       )
-      .describe('Concrete missing information detected from the resume that would strengthen tailoring'),
+      .describe(
+        'Concrete missing information detected from the resume that would strengthen tailoring'
+      ),
   })
   .strict();
 
@@ -186,6 +223,42 @@ export const CombinedTailoringAnalysisSchema = z
   .object({
     jobAnalysis: JobAnalysisCoreSchema,
     resumeAnalysis: ResumeAnalysisCoreSchema,
+
+    // Optional tailoring signals used to drive generation and validation.
+    // Kept intentionally shallow to avoid Gemini responseJsonSchema nesting limits.
+    targetRoleTitle: z.string().optional(),
+    jobKeywords: z.array(z.string()).optional(),
+
+    jobRequirements: z
+      .array(
+        z
+          .object({
+            id: z.string().describe('Stable identifier like R1, R2'),
+            text: z.string().describe('Requirement text extracted from job posting'),
+            priority: z.enum(['must', 'preferred']),
+            category: z.string().describe('Short category label (e.g. backend, data, leadership)'),
+          })
+          .strict()
+      )
+      .optional(),
+
+    requirementCoverage: z
+      .array(
+        z
+          .object({
+            requirementId: z.string().describe('References jobRequirements.id'),
+            status: z.enum(['covered', 'partial', 'missing', 'not_applicable']),
+            evidence: z.string().describe('Short quote/paraphrase grounded in resumeText/answers'),
+            evidenceSource: z.string().describe('"resume" or "answer" plus optional location hint'),
+            allowedClaim: z.string().describe('Tight phrasing that is safe to use in the draft'),
+            rewriteHint: z.string().describe('How to express it for this job (no new facts)'),
+            followUpQuestion: z
+              .string()
+              .describe('If partial/missing, a concrete candidate question; else empty'),
+          })
+          .strict()
+      )
+      .optional(),
   })
   .strict();
 
@@ -241,7 +314,7 @@ export const ResumeDraftSchema = z
           endDate: z.string().optional(),
           bullets: z.array(z.string()),
         })
-        .strict(),
+        .strict()
     ),
     projects: z.string(),
     skills: z.string(),
@@ -253,4 +326,22 @@ export type ResumeDraft = z.infer<typeof ResumeDraftSchema>;
 
 export function resumeDraftJsonSchema() {
   return toJsonSchema(ResumeDraftSchema);
+}
+
+export const ResumeDraftValidatorReportSchema = z
+  .object({
+    needsRevision: z.boolean(),
+    grounded: z.enum(['yes', 'unclear', 'no']),
+    unmetMustRequirementIds: z.array(z.string()),
+    potentialFabrications: z.array(z.string()),
+    genericPhrases: z.array(z.string()),
+    fixInstructions: z.string(),
+    followUpQuestions: z.array(z.string()),
+  })
+  .strict();
+
+export type ResumeDraftValidatorReport = z.infer<typeof ResumeDraftValidatorReportSchema>;
+
+export function resumeDraftValidatorReportJsonSchema() {
+  return toJsonSchema(ResumeDraftValidatorReportSchema);
 }

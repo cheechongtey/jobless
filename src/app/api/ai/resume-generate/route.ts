@@ -1,7 +1,13 @@
 import type { JobAnalysis, JobPosting, ResumeAnalysis } from '@/entities/application/model/types';
 import { geminiClient } from '@/shared/lib/ai/gemini';
-import { resumeDraftPrompt } from '@/shared/lib/ai/prompts';
-import { resumeDraftJsonSchema,ResumeDraftSchema } from '@/shared/lib/ai/schemas';
+import { resumeDraftPrompt, resumeDraftValidatePrompt } from '@/shared/lib/ai/prompts';
+import type { ResumeDraftValidatorReport } from '@/shared/lib/ai/schemas';
+import {
+  resumeDraftJsonSchema,
+  ResumeDraftSchema,
+  resumeDraftValidatorReportJsonSchema,
+  ResumeDraftValidatorReportSchema,
+} from '@/shared/lib/ai/schemas';
 import { logger } from '@/shared/lib/logger';
 
 export const runtime = 'nodejs';
@@ -32,23 +38,59 @@ export async function POST(req: Request) {
 
   const ai = geminiClient();
 
-  try {
+  async function generateDraft(args: {
+    job: JobPosting;
+    resumeText: string;
+    jobAnalysis: JobAnalysis | null;
+    resumeAnalysis: ResumeAnalysis | null;
+    answers: Record<string, string> | undefined;
+    validatorInstructions?: string;
+    priorDraft?: unknown;
+  }) {
+    const {
+      job,
+      resumeText,
+      jobAnalysis,
+      resumeAnalysis,
+      answers,
+      validatorInstructions,
+      priorDraft,
+    } = args;
+
+    const prompt =
+      typeof validatorInstructions === 'string' && validatorInstructions.trim()
+        ? `${resumeDraftPrompt({
+            jobDescriptionText: job.descriptionText,
+            jobMeta: {
+              company: job.company,
+              roleTitle: job.roleTitle,
+              location: job.location,
+              seniority: job.seniority,
+            },
+            requirements: job.requirements,
+            resumeText,
+            jobAnalysis,
+            resumeAnalysis,
+            answers,
+          })}\n\nValidator fix instructions (follow exactly, do not add facts):\n${validatorInstructions}\n\nPrior draft (for reference):\n${JSON.stringify(priorDraft ?? {})}`
+        : resumeDraftPrompt({
+            jobDescriptionText: job.descriptionText,
+            jobMeta: {
+              company: job.company,
+              roleTitle: job.roleTitle,
+              location: job.location,
+              seniority: job.seniority,
+            },
+            requirements: job.requirements,
+            resumeText,
+            jobAnalysis,
+            resumeAnalysis,
+            answers,
+          });
+
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
-      contents: resumeDraftPrompt({
-        jobDescriptionText: body.job.descriptionText,
-        jobMeta: {
-          company: body.job.company,
-          roleTitle: body.job.roleTitle,
-          location: body.job.location,
-          seniority: body.job.seniority,
-        },
-        requirements: body.job.requirements,
-        resumeText: body.resumeText,
-        jobAnalysis: body.jobAnalysis ?? null,
-        resumeAnalysis: body.resumeAnalysis ?? null,
-        answers: body.answers,
-      }),
+      contents: prompt,
       config: {
         responseMimeType: 'application/json',
         responseJsonSchema: resumeDraftJsonSchema(),
@@ -58,7 +100,7 @@ export async function POST(req: Request) {
     });
 
     if (typeof response.text !== 'string' || !response.text.trim()) {
-      return Response.json({ error: 'Empty model response' }, { status: 502 });
+      throw new Error('Empty model response');
     }
 
     logger.info(
@@ -67,7 +109,7 @@ export async function POST(req: Request) {
         textLen: response.text.length,
         textPreview: response.text.slice(0, 500),
       },
-      'Gemini resume generation response received',
+      'Gemini resume generation response received'
     );
 
     let json: unknown;
@@ -81,9 +123,9 @@ export async function POST(req: Request) {
           textLen: response.text.length,
           textPreview: response.text.slice(0, 1000),
         },
-        'Failed to parse Gemini resume generation JSON',
+        'Failed to parse Gemini resume generation JSON'
       );
-      return Response.json({ error: 'Model returned invalid JSON (resume generation)' }, { status: 502 });
+      throw new Error('Model returned invalid JSON (resume generation)');
     }
 
     const parsed = ResumeDraftSchema.safeParse(json);
@@ -95,12 +137,133 @@ export async function POST(req: Request) {
           textLen: response.text.length,
           textPreview: response.text.slice(0, 1000),
         },
-        'Gemini resume generation JSON did not match schema',
+        'Gemini resume generation JSON did not match schema'
       );
-      return Response.json({ error: 'Model output did not match schema (resume generation)' }, { status: 502 });
+      throw new Error('Model output did not match schema (resume generation)');
     }
 
-    return Response.json({ data: parsed.data });
+    return parsed.data;
+  }
+
+  async function validateDraft(args: {
+    job: JobPosting;
+    resumeText: string;
+    jobAnalysis: JobAnalysis | null;
+    resumeAnalysis: ResumeAnalysis | null;
+    answers: Record<string, string> | undefined;
+    draft: unknown;
+  }): Promise<ResumeDraftValidatorReport | null> {
+    const { job, resumeText, jobAnalysis, resumeAnalysis, answers, draft } = args;
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: resumeDraftValidatePrompt({
+        jobDescriptionText: job.descriptionText,
+        jobMeta: {
+          company: job.company,
+          roleTitle: job.roleTitle,
+          location: job.location,
+          seniority: job.seniority,
+        },
+        jobAnalysis,
+        resumeAnalysis,
+        answers,
+        resumeText,
+        draft,
+      }),
+      config: {
+        responseMimeType: 'application/json',
+        responseJsonSchema: resumeDraftValidatorReportJsonSchema(),
+        temperature: 0.1,
+        maxOutputTokens: 2048,
+      },
+    });
+
+    if (typeof response.text !== 'string' || !response.text.trim()) {
+      throw new Error('Empty model response (draft validator)');
+    }
+
+    logger.info(
+      {
+        kind: 'gemini.resume-generate.validator.response',
+        textLen: response.text.length,
+        textPreview: response.text.slice(0, 500),
+      },
+      'Gemini resume draft validator response received'
+    );
+
+    let json: unknown;
+    try {
+      json = JSON.parse(response.text);
+    } catch (err) {
+      logger.error(
+        {
+          kind: 'gemini.resume-generate.validator.json-parse-error',
+          message: err instanceof Error ? err.message : String(err),
+          textLen: response.text.length,
+          textPreview: response.text.slice(0, 1000),
+        },
+        'Failed to parse Gemini draft validator JSON'
+      );
+      return null;
+    }
+
+    const parsed = ResumeDraftValidatorReportSchema.safeParse(json);
+    if (!parsed.success) {
+      logger.error(
+        {
+          kind: 'gemini.resume-generate.validator.schema-parse-error',
+          issues: parsed.error.issues,
+          textLen: response.text.length,
+          textPreview: response.text.slice(0, 1000),
+        },
+        'Gemini draft validator JSON did not match schema'
+      );
+      return null;
+    }
+
+    return parsed.data;
+  }
+
+  try {
+    const draft1 = await generateDraft({
+      job: body.job,
+      resumeText: body.resumeText,
+      jobAnalysis: body.jobAnalysis ?? null,
+      resumeAnalysis: body.resumeAnalysis ?? null,
+      answers: body.answers,
+    });
+
+    const report = await validateDraft({
+      job: body.job,
+      resumeText: body.resumeText,
+      jobAnalysis: body.jobAnalysis ?? null,
+      resumeAnalysis: body.resumeAnalysis ?? null,
+      answers: body.answers,
+      draft: draft1,
+    });
+
+    // Fail-open: if validator can't produce a valid report, keep the first draft.
+    if (!report) {
+      return Response.json({ data: draft1 });
+    }
+
+    if (!report.needsRevision && report.grounded !== 'no') {
+      return Response.json({ data: draft1 });
+    }
+
+    const draft2 = await generateDraft({
+      job: body.job,
+      resumeText: body.resumeText,
+      jobAnalysis: body.jobAnalysis ?? null,
+      resumeAnalysis: body.resumeAnalysis ?? null,
+      answers: body.answers,
+      validatorInstructions: report.fixInstructions,
+      priorDraft: draft1,
+    });
+
+    // Return best-effort second attempt.
+    return Response.json({ data: draft2 });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     logger.error(
@@ -108,7 +271,7 @@ export async function POST(req: Request) {
         kind: 'gemini.resume-generate.unhandled-error',
         message,
       },
-      'Unhandled error in resume generation',
+      'Unhandled error in resume generation'
     );
     return Response.json({ error: message }, { status: 500 });
   }

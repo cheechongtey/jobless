@@ -1,7 +1,15 @@
 import { appDb } from '@/shared/lib/db/appDb';
 import { uuid } from '@/shared/lib/id';
 
-import type { Application, JobAnalysis, Requirements, ResumeAnalysis, UUID } from './types';
+import type {
+  Application,
+  JobAnalysis,
+  JobRequirement,
+  RequirementCoverageItem,
+  Requirements,
+  ResumeAnalysis,
+  UUID,
+} from './types';
 
 function now() {
   return Date.now();
@@ -53,10 +61,7 @@ export async function updateApplicationTitle(id: UUID, title: string) {
   await appDb.applications.update(id, { title, updatedAt: now() });
 }
 
-export async function updateJobFields(
-  id: UUID,
-  patch: Partial<Application['job']>,
-) {
+export async function updateJobFields(id: UUID, patch: Partial<Application['job']>) {
   const app = await appDb.applications.get(id);
   if (!app) return;
   await appDb.applications.put({
@@ -94,7 +99,22 @@ export async function updateResumeAnalysis(id: UUID, resumeAnalysis: ResumeAnaly
   await appDb.applications.update(id, { resumeAnalysis, updatedAt: now() });
 }
 
-export async function updateResumeAnalysisAnswers(id: UUID, resumeAnalysisAnswers: Record<string, string>) {
+export async function updateTailoringSignals(
+  id: UUID,
+  patch: {
+    targetRoleTitle?: string;
+    jobKeywords?: string[];
+    jobRequirements?: JobRequirement[];
+    requirementCoverage?: RequirementCoverageItem[];
+  }
+) {
+  await appDb.applications.update(id, { ...patch, updatedAt: now() });
+}
+
+export async function updateResumeAnalysisAnswers(
+  id: UUID,
+  resumeAnalysisAnswers: Record<string, string>
+) {
   await appDb.applications.update(id, { resumeAnalysisAnswers, updatedAt: now() });
 }
 
@@ -103,9 +123,15 @@ export async function updateResumeDraft(id: UUID, resumeDraft: Application['resu
 }
 
 export async function deleteApplication(id: UUID) {
-  await appDb.transaction('rw', appDb.applications, appDb.resumeSnapshots, appDb.chatMessages, async () => {
-    await appDb.applications.delete(id);
-    await appDb.resumeSnapshots.where('applicationId').equals(id).delete();
-    await appDb.chatMessages.where('applicationId').equals(id).delete();
-  });
+  await appDb.transaction(
+    'rw',
+    appDb.applications,
+    appDb.resumeSnapshots,
+    appDb.chatMessages,
+    async () => {
+      await appDb.applications.delete(id);
+      await appDb.resumeSnapshots.where('applicationId').equals(id).delete();
+      await appDb.chatMessages.where('applicationId').equals(id).delete();
+    }
+  );
 }

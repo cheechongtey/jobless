@@ -13,6 +13,7 @@ import {
   updateJobAnalysis,
   updateResumeAnalysis,
   updateResumeDraft,
+  updateTailoringSignals,
 } from '@/entities/application/model/repo';
 import type { Application, JobAnalysis, ResumeAnalysis } from '@/entities/application/model/types';
 import { AnalysisResult } from '@/features/resume/analysis-result/ui/analysis-result';
@@ -46,6 +47,46 @@ async function postJson<T>(url: string, body: unknown): Promise<T> {
     throw new Error(`Request failed (${res.status})`);
   }
   return json as T;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function isString(value: unknown): value is string {
+  return typeof value === 'string';
+}
+
+function isJobRequirements(value: unknown): value is NonNullable<Application['jobRequirements']> {
+  if (!Array.isArray(value)) return false;
+  return value.every(
+    (item) =>
+      isRecord(item) &&
+      isString(item.id) &&
+      isString(item.text) &&
+      (item.priority === 'must' || item.priority === 'preferred') &&
+      isString(item.category)
+  );
+}
+
+function isRequirementCoverage(
+  value: unknown
+): value is NonNullable<Application['requirementCoverage']> {
+  if (!Array.isArray(value)) return false;
+  return value.every(
+    (item) =>
+      isRecord(item) &&
+      isString(item.requirementId) &&
+      (item.status === 'covered' ||
+        item.status === 'partial' ||
+        item.status === 'missing' ||
+        item.status === 'not_applicable') &&
+      isString(item.evidence) &&
+      isString(item.evidenceSource) &&
+      isString(item.allowedClaim) &&
+      isString(item.rewriteHint) &&
+      isString(item.followUpQuestion)
+  );
 }
 
 export function ApplicationContent(props: { id: string }) {
@@ -93,27 +134,52 @@ export function ApplicationContent(props: { id: string }) {
                   className="rounded-r-none"
                   disabled={analyzing}
                   onClick={async () => {
-                    try {
-                      setAnalyzing(true);
+                    setAnalyzing(true);
+
+                    const promise = (async () => {
                       const result = await postJson<{
-                        data: { jobAnalysis: JobAnalysis; resumeAnalysis: ResumeAnalysis };
+                        data: {
+                          jobAnalysis: JobAnalysis;
+                          resumeAnalysis: ResumeAnalysis;
+                          targetRoleTitle?: string;
+                          jobKeywords?: string[];
+                          jobRequirements?: unknown;
+                          requirementCoverage?: unknown;
+                        };
                       }>('/api/ai/resume-analysis', {
                         job: app.job,
                         resumeText: app.resumeSourceText,
                       });
+
                       await updateJobAnalysis(app.id, result.data.jobAnalysis);
                       await updateResumeAnalysis(app.id, result.data.resumeAnalysis);
-                      toast.success('Analysis saved');
-                    } catch (e) {
-                      toast.error(e instanceof Error ? e.message : 'Analysis failed');
-                    } finally {
-                      setAnalyzing(false);
-                    }
+                      await updateTailoringSignals(app.id, {
+                        targetRoleTitle: result.data.targetRoleTitle,
+                        jobKeywords: Array.isArray(result.data.jobKeywords)
+                          ? result.data.jobKeywords.filter(
+                              (x): x is string => typeof x === 'string'
+                            )
+                          : undefined,
+                        jobRequirements: isJobRequirements(result.data.jobRequirements)
+                          ? result.data.jobRequirements
+                          : undefined,
+                        requirementCoverage: isRequirementCoverage(result.data.requirementCoverage)
+                          ? result.data.requirementCoverage
+                          : undefined,
+                      });
+                    })();
+
+                    toast.promise(promise, {
+                      loading: 'Analyzing…',
+                      success: 'Analysis saved',
+                      error: (e) => (e instanceof Error ? e.message : 'Analysis failed'),
+                    });
+
+                    void promise.finally(() => setAnalyzing(false));
                   }}
                 >
                   <FileTextIcon className="size-4" />
                   <span className="hidden sm:inline">Analyze</span>
-                  <span className="sr-only sm:not-sr-only">{analyzing ? 'Analyzing…' : ''}</span>
                 </Button>
               </TooltipTrigger>
               <TooltipContent>Analyze resume vs job</TooltipContent>
@@ -134,8 +200,9 @@ export function ApplicationContent(props: { id: string }) {
                     !app.resumeSourceText.trim()
                   }
                   onClick={async () => {
-                    try {
-                      setGenerating(true);
+                    setGenerating(true);
+
+                    const promise = (async () => {
                       const result = await postJson<{ data: Application['resumeDraft'] }>(
                         '/api/ai/resume-generate',
                         {
@@ -147,17 +214,19 @@ export function ApplicationContent(props: { id: string }) {
                         }
                       );
                       await updateResumeDraft(app.id, result.data);
-                      toast.success('Draft generated');
-                    } catch (e) {
-                      toast.error(e instanceof Error ? e.message : 'Generation failed');
-                    } finally {
-                      setGenerating(false);
-                    }
+                    })();
+
+                    toast.promise(promise, {
+                      loading: 'Generating…',
+                      success: 'Draft generated',
+                      error: (e) => (e instanceof Error ? e.message : 'Generation failed'),
+                    });
+
+                    void promise.finally(() => setGenerating(false));
                   }}
                 >
                   <SparklesIcon className="size-4" />
                   <span className="hidden sm:inline">Generate</span>
-                  <span className="sr-only sm:not-sr-only">{generating ? 'Generating…' : ''}</span>
                 </Button>
               </TooltipTrigger>
               <TooltipContent>Generate tailored resume</TooltipContent>

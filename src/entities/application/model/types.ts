@@ -14,7 +14,16 @@ export type JobAnalysis = {
     company?: string;
     title?: string;
     location?: string;
-    level: 'intern' | 'junior' | 'mid' | 'senior' | 'staff' | 'principal' | 'manager' | 'director' | 'unknown';
+    level:
+      | 'intern'
+      | 'junior'
+      | 'mid'
+      | 'senior'
+      | 'staff'
+      | 'principal'
+      | 'manager'
+      | 'director'
+      | 'unknown';
     function?: string;
   };
   req: {
@@ -46,6 +55,23 @@ export type ResumeAnalysis = {
     exampleAnswer?: string;
     priority: 'high' | 'medium' | 'low';
   }>;
+};
+
+export type JobRequirement = {
+  id: string;
+  text: string;
+  priority: 'must' | 'preferred';
+  category: string;
+};
+
+export type RequirementCoverageItem = {
+  requirementId: string;
+  status: 'covered' | 'partial' | 'missing' | 'not_applicable';
+  evidence: string;
+  evidenceSource: string;
+  allowedClaim: string;
+  rewriteHint: string;
+  followUpQuestion: string;
 };
 
 export type JobPosting = {
@@ -85,6 +111,10 @@ export type Application = {
   resumeDraft: ResumeDraft;
   jobAnalysis?: JobAnalysis;
   resumeAnalysis?: ResumeAnalysis;
+  jobKeywords?: string[];
+  targetRoleTitle?: string;
+  jobRequirements?: JobRequirement[];
+  requirementCoverage?: RequirementCoverageItem[];
   resumeAnalysisAnswers?: Record<string, string>;
 };
 

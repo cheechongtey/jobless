@@ -14,6 +14,17 @@ type ReqBody = {
   resumeText: string;
 };
 
+type ApiShape = {
+  data: {
+    jobAnalysis: unknown;
+    resumeAnalysis: unknown;
+    targetRoleTitle?: string;
+    jobKeywords?: string[];
+    jobRequirements?: unknown;
+    requirementCoverage?: unknown;
+  };
+};
+
 export async function POST(req: Request) {
   let body: ReqBody;
   try {
@@ -64,7 +75,7 @@ export async function POST(req: Request) {
         textLen: response.text.length,
         textPreview: response.text.slice(0, 500),
       },
-      'Gemini one-call resume analysis response received',
+      'Gemini one-call resume analysis response received'
     );
 
     let json: unknown;
@@ -78,9 +89,12 @@ export async function POST(req: Request) {
           textLen: response.text.length,
           textPreview: response.text.slice(0, 1000),
         },
-        'Failed to parse Gemini one-call JSON',
+        'Failed to parse Gemini one-call JSON'
       );
-      return Response.json({ error: 'Model returned invalid JSON (one-call resume analysis)' }, { status: 502 });
+      return Response.json(
+        { error: 'Model returned invalid JSON (one-call resume analysis)' },
+        { status: 502 }
+      );
     }
 
     const parsed = CombinedTailoringAnalysisSchema.safeParse(json);
@@ -92,12 +106,26 @@ export async function POST(req: Request) {
           textLen: response.text.length,
           textPreview: response.text.slice(0, 1000),
         },
-        'Gemini one-call JSON did not match schema',
+        'Gemini one-call JSON did not match schema'
       );
-      return Response.json({ error: 'Model output did not match schema (one-call resume analysis)' }, { status: 502 });
+      return Response.json(
+        { error: 'Model output did not match schema (one-call resume analysis)' },
+        { status: 502 }
+      );
     }
 
-    return Response.json({ data: parsed.data });
+    const payload: ApiShape = {
+      data: {
+        jobAnalysis: parsed.data.jobAnalysis,
+        resumeAnalysis: parsed.data.resumeAnalysis,
+        targetRoleTitle: parsed.data.targetRoleTitle,
+        jobKeywords: parsed.data.jobKeywords,
+        jobRequirements: parsed.data.jobRequirements,
+        requirementCoverage: parsed.data.requirementCoverage,
+      },
+    };
+
+    return Response.json(payload);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     logger.error(
@@ -105,7 +133,7 @@ export async function POST(req: Request) {
         kind: 'gemini.resume-analysis.one-call.unhandled-error',
         message,
       },
-      'Unhandled error in one-call resume analysis',
+      'Unhandled error in one-call resume analysis'
     );
     return Response.json({ error: message }, { status: 500 });
   }
