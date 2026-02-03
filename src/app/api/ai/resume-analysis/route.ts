@@ -61,7 +61,7 @@ export async function POST(req: Request) {
         responseMimeType: 'application/json',
         responseJsonSchema: combinedTailoringAnalysisJsonSchema(),
         temperature: 0.2,
-        maxOutputTokens: 8192,
+        maxOutputTokens: 16384,
       },
     });
 
